@@ -1,3 +1,4 @@
 # Paragraph-level-Simplification-of-Medical-Texts
 
-Coming soon!
+Instructions and pretrained models coming soon!
+
