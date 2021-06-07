@@ -2,6 +2,7 @@ import json
 import os
 import numpy as np
 from nltk.tokenize import sent_tokenize
+from transformers import BartTokenizer
 import sys
 
 def abs_length(article):
@@ -34,7 +35,8 @@ def one_para_filter(text):
             break
     return ' '.join(sentence_list[first_index:]) if first_index > -1 else ''
 
-def clean_up_data(data, data_dir):
+def clean_up_data(fname):
+    data = json.load(open(fname))
 
     #truncate abstract to only main results onwards
     for article in data:
@@ -44,7 +46,7 @@ def clean_up_data(data, data_dir):
                 first_index = index
                 break
         article['abstract'] = article['abstract'][first_index:]
-    
+
     #get rid of reviews with character counts < 1000
     data = [x for x in data if abs_length(x) >= 1000]
 
@@ -94,8 +96,25 @@ def clean_up_data(data, data_dir):
     data_long_single = [x for x in data_long_single if (pls_length(x)/abs_length(x) >= 0.20 and pls_length(x)/abs_length(x) <= 1.4)]
     data_long_multi = [x for x in data_long_multi if (pls_length(x)/abs_length(x) >= 0.30 and pls_length(x)/abs_length(x) <= 1.3)]
     data_sectioned = [x for x in data_sectioned if (pls_length(x)/abs_length(x) >= 0.30 and pls_length(x)/abs_length(x) <= 1.3)]
+    data_final = data_long_single+data_long_multi+data_sectioned
 
-    data = data_long_single+data_long_multi+data_sectioned
-    print(len(data))
-    with open(os.path.join(data_dir, 'data_final.json'), 'w') as f:
-        f.write(json.dumps(data, indent=2))
+    #now only keep the articles in which both the abstract and PLS have <= 1024 tokens
+    tokenizer = BartTokenizer.from_pretrained('facebook/bart-large-xsum')
+    data_final_1024 = []
+    for article in data_final:
+        abstract = article['abstract']
+        pls = article['pls']
+        if len(tokenizer(abstract)['input_ids']) <= 1024 and len(tokenizer(pls)['input_ids']) <= 1024:
+            data_final_1024.append(article)
+
+    with open('scraped_data/data_final.json', 'w') as f:
+        f.write(json.dumps(data_final, indent=2))
+
+    with open('scraped_data/data_final_1024.json', 'w') as f:
+        f.write(json.dumps(data_final_1024, indent=2))
+
+def main():
+    clean_up_data('scraped_data/data.json')
+
+if __name__ == "__main__":
+    main()

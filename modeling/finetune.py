@@ -586,7 +586,6 @@ def main(args, model=None) -> SummarizationModule:
     else:
         es_callback = False
 
-
     trainer = None
 
     if args.do_train:
@@ -598,9 +597,7 @@ def main(args, model=None) -> SummarizationModule:
             model,
             args,
             logging_callback=Seq2SeqLoggingCallback(),
-            checkpoint_callback=get_checkpoint_callback(
-                args.output_dir, model.val_metric, save_top_k, lower_is_better
-            ),
+            checkpoint_callback=get_checkpoint_callback(args.output_dir, model.val_metric, save_top_k, lower_is_better),
             early_stopping_callback=es_callback,
             logger=logger,
         )
@@ -609,7 +606,6 @@ def main(args, model=None) -> SummarizationModule:
         #now write loss logs into the same directory
         with open(os.path.join(args.output_dir, 'loss_logs.json'), 'w') as f:
             f.write(json.dumps(model.losses, indent=2))
-
 
     if args.do_generate:
 

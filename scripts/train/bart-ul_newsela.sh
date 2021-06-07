@@ -1,17 +1,8 @@
 #!/bin/bash
-#SBATCH -J bart_alpha-10
-#SBATCH -o out/bart_alpha-10.o%j
-#SBATCH -e out/bart_alpha-10.e%j
-#SBATCH -p p100                  # Submit to the 'normal' or 'development' queue
-#SBATCH -N 1                    # Total number of nodes requested (16 cores/node)
-#SBATCH -n 1                    # Total number of mpi tasks requested
-#SBATCH -t 2:00:00             # Max run time (hh:mm:ss) - 72 hours
-#SBATCH --mail-user=ashwin.devaraj@utexas.edu
-#SBATCH --mail-type=ALL
 
 export OUTPUT_DIR_NAME=trained_models/bart-ul_newsela
 export CURRENT_DIR=${PWD}
-export DATA_DIR=${CURRENT_DIR}/data/truncated-1024-inf
+export DATA_DIR=${CURRENT_DIR}/data/data-1024
 export OUTPUT_DIR=${CURRENT_DIR}/${OUTPUT_DIR_NAME}
 
 # Make output directory if it doesn't exist
@@ -41,4 +32,3 @@ python modeling/finetune.py \
 --unlikelihood_selective_penalty \
 --unlikelihood_alpha=100 \
 --do_train $@
-

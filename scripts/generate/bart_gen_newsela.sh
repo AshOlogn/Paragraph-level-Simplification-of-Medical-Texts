@@ -1,23 +1,14 @@
 #!/bin/bash
-#SBATCH -J bart_gen_newsela
-#SBATCH -o out/bart_gen_newsela.o%j
-#SBATCH -e out/bart_gen_newsela.e%j
-#SBATCH -p gtx                  # Submit to the 'normal' or 'development' queue
-#SBATCH -N 1                    # Total number of nodes requested (16 cores/node)
-#SBATCH -n 1                    # Total number of mpi tasks requested
-#SBATCH -t 4:00:00             # Max run time (hh:mm:ss) - 72 hours
-#SBATCH --mail-user=ashwin.devaraj@utexas.edu
-#SBATCH --mail-type=ALL
 
 export MODEL_DIR_NAME=trained_models/bart-ul_newsela
 export CURRENT_DIR=${PWD}
-export DATA_DIR=${CURRENT_DIR}/data/truncated-1024-inf
+export DATA_DIR=${CURRENT_DIR}/data/data-1024
 export MODEL_DIR=${CURRENT_DIR}/${MODEL_DIR_NAME}
 
 # Add parent directory to python path to access lightning_base.py and utils.py
 export PYTHONPATH="../":"${PYTHONPATH}"
 export PYTHONPATH="../../src/":"${PYTHONPATH}"
-python modeling/finetune.py \
+python -u modeling/finetune.py \
 --model_name_or_path=facebook/bart-large-xsum \
 --data_dir=$DATA_DIR \
 --num_train_epochs=1 \
@@ -35,5 +26,3 @@ python modeling/finetune.py \
 --decode_method=nucleus \
 --decode_p=0.9 \
 --do_generate
-
-

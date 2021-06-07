@@ -222,6 +222,8 @@ def scrape_articles_from_dois(dois, data_dir):
     with open(path.join(data_dir, 'data.json'), 'w') as f:
         f.write(json.dumps(articles, indent=2))
 
+def main():
+    scrape_articles(data_dir='scraped_data', results_per_page=25)
 
-scrape_articles(data_dir='scraped_data', results_per_page=25)
-
+if __name__ == "__main__":
+    main()

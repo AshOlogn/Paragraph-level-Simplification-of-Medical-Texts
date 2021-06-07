@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export MODEL_DIR_NAME=trained_models/bart-ul_cochrane
+export MODEL_DIR_NAME=trained_models/bart-no-ul
 export CURRENT_DIR=${PWD}
 export DATA_DIR=${CURRENT_DIR}/data/data-1024
 export MODEL_DIR=${CURRENT_DIR}/${MODEL_DIR_NAME}
