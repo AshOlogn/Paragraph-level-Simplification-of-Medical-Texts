@@ -123,10 +123,6 @@ class BaseTransformer(pl.LightningModule):
         total_steps = self.total_steps()
         warmup_steps = int(total_steps * float(self.hparams.warmup_steps)) if '.' in self.hparams.warmup_steps else int(self.hparams.warmup_steps)
 
-        # print("********************************")
-        # print(f"total steps: {total_steps}, warmup steps: {warmup_steps}")
-        # print("********************************")
-
         #TODO: maybe make this a bit more elegant
         if self.hparams.lr_scheduler == 'constant':
             scheduler = get_schedule_func(

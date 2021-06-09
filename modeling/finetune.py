@@ -22,24 +22,20 @@ import time
 
 from callbacks import Seq2SeqLoggingCallback, get_checkpoint_callback, get_early_stopping_callback
 from transformers import MBartTokenizer, T5ForConditionalGeneration, BartForConditionalGeneration, BartTokenizer, BartConfig
-from transformers.modeling_bart import shift_tokens_right
 from utils import (
     ROUGE_KEYS,
     LegacySeq2SeqDataset,
     Seq2SeqDataset,
     assert_all_frozen,
-    calculate_bleu,
-    calculate_rouge,
     flatten_list,
     freeze_embeds,
     freeze_params,
-    get_git_info,
     label_smoothed_nll_loss,
     lmap,
     pickle_save,
-    save_git_info,
     save_json,
     use_task_specific_params,
+    shift_tokens_right,
 )
 
 
@@ -47,9 +43,7 @@ from utils import (
 sys.path.insert(2, str(Path(__file__).resolve().parents[1]))
 from lightning_base import BaseTransformer, add_generic_args, generic_train  # noqa
 
-
 logger = logging.getLogger(__name__)
-
 
 class SummarizationModule(BaseTransformer):
     mode = "summarization"
@@ -68,7 +62,6 @@ class SummarizationModule(BaseTransformer):
 
         super().__init__(hparams, num_labels=None, mode=self.mode, **kwargs)
         use_task_specific_params(self.model, "summarization")
-        save_git_info(self.hparams.output_dir)
         self.metrics_save_path = Path(self.output_dir) / "metrics.json"
         self.hparams_save_path = Path(self.output_dir) / "hparams.pkl"
         pickle_save(self.hparams, self.hparams_save_path)
@@ -102,7 +95,6 @@ class SummarizationModule(BaseTransformer):
             freeze_params(self.model.get_encoder())
             assert_all_frozen(self.model.get_encoder())
 
-        self.hparams.git_sha = get_git_info()["repo_sha"]
         self.num_workers = hparams.num_workers
         self.decoder_start_token_id = None  # default to config
         if self.model.config.decoder_start_token_id is None and isinstance(self.tokenizer, MBartTokenizer):
@@ -277,9 +269,6 @@ class SummarizationModule(BaseTransformer):
             f"{prefix}_{self.val_metric}": metric_tensor,
         }
 
-    def calc_generative_metrics(self, preds, target) -> Dict:
-        return calculate_rouge(preds, target)
-
     def _generative_step(self, batch: dict) -> dict:
         t0 = time.time()
 
@@ -297,9 +286,8 @@ class SummarizationModule(BaseTransformer):
         target: List[str] = self.ids_to_clean_text(batch["labels"])
         loss_tensors = self._step(batch)
         base_metrics = {name: loss for name, loss in zip(self.loss_names, loss_tensors)}
-        rouge: Dict = self.calc_generative_metrics(preds, target)
         summ_len = np.mean(lmap(len, generated_ids))
-        base_metrics.update(gen_time=gen_time, gen_len=summ_len, preds=preds, target=target, **rouge)
+        base_metrics.update(gen_time=gen_time, gen_len=summ_len, preds=preds, target=target)
         return base_metrics
 
     def test_step(self, batch, batch_idx):

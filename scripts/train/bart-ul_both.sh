@@ -1,4 +1,13 @@
 #!/bin/bash
+#SBATCH -J naacl-ul-both
+#SBATCH -o out/naacl-ul-both.o%j
+#SBATCH -e out/naacl-ul-both.e%j
+#SBATCH -p p100
+#SBATCH -N 1                    # Total number of nodes requested (16 cores/node)
+#SBATCH -n 1                    # Total number of mpi tasks requested
+#SBATCH -t 2:00:00             # Max run time (hh:mm:ss) - 72 hours
+#SBATCH --mail-user=ashwin.devaraj@utexas.edu
+#SBATCH --mail-type=ALL
 
 export OUTPUT_DIR_NAME=trained_models/bart-ul_both
 export CURRENT_DIR=${PWD}

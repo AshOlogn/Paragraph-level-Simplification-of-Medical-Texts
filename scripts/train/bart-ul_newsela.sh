@@ -1,4 +1,13 @@
 #!/bin/bash
+#SBATCH -J naacl-ul-newsela
+#SBATCH -o out/naacl-ul-newsela.o%j
+#SBATCH -e out/naacl-ul-newsela.e%j
+#SBATCH -p p100
+#SBATCH -N 1                    # Total number of nodes requested (16 cores/node)
+#SBATCH -n 1                    # Total number of mpi tasks requested
+#SBATCH -t 2:00:00             # Max run time (hh:mm:ss) - 72 hours
+#SBATCH --mail-user=ashwin.devaraj@utexas.edu
+#SBATCH --mail-type=ALL
 
 export OUTPUT_DIR_NAME=trained_models/bart-ul_newsela
 export CURRENT_DIR=${PWD}

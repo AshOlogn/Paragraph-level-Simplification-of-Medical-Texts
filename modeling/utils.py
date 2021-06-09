@@ -9,20 +9,14 @@ from logging import getLogger
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
-import git
 import numpy as np
 import torch
 import torch.distributed as dist
-from rouge_score import rouge_scorer, scoring
-from sacrebleu import corpus_bleu
 from torch import nn
 from torch.utils.data import Dataset, Sampler
 
 from sentence_splitter import add_newline_to_end_of_each_sentence
 from transformers import BartTokenizer, EvalPrediction, PreTrainedTokenizer, T5Tokenizer
-from transformers.file_utils import cached_property
-from transformers.modeling_bart import shift_tokens_right
-
 
 try:
     from fairseq.data.data_utils import batch_by_size
@@ -30,6 +24,38 @@ try:
     FAIRSEQ_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     FAIRSEQ_AVAILABLE = False
+
+
+class cached_property(property):
+    """
+    Descriptor that mimics @property but caches output in member variable.
+
+    From tensorflow_datasets
+
+    Built-in in functools from Python 3.8.
+    """
+
+    def __get__(self, obj, objtype=None):
+        # See docs.python.org/3/howto/descriptor.html#properties
+        if obj is None:
+            return self
+        if self.fget is None:
+            raise AttributeError("unreadable attribute")
+        attr = "__cached_" + self.fget.__name__
+        cached = getattr(obj, attr, None)
+        if cached is None:
+            cached = self.fget(obj)
+            setattr(obj, attr, cached)
+        return cached
+
+
+def shift_tokens_right(input_ids, pad_token_id):
+    """Shift input ids one token to the right, and wrap the last non pad token (usually <eos>)."""
+    prev_output_tokens = input_ids.clone()
+    index_of_eos = (input_ids.ne(pad_token_id).sum(dim=1) - 1).unsqueeze(-1)
+    prev_output_tokens[:, 0] = input_ids.gather(1, index_of_eos).squeeze()
+    prev_output_tokens[:, 1:] = input_ids[:, :-1]
+    return prev_output_tokens
 
 
 def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=-100):
@@ -56,40 +82,6 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=-100):
 def lmap(f: Callable, x: Iterable) -> List:
     """list(map(f, x))"""
     return list(map(f, x))
-
-
-def calculate_bleu(output_lns, refs_lns, **kwargs) -> dict:
-    """Uses sacrebleu's corpus_bleu implementation."""
-    return {"bleu": round(corpus_bleu(output_lns, [refs_lns], **kwargs).score, 4)}
-
-
-def build_compute_metrics_fn(task_name: str, tokenizer: PreTrainedTokenizer) -> Callable[[EvalPrediction], Dict]:
-    def non_pad_len(tokens: np.ndarray) -> int:
-        return np.count_nonzero(tokens != tokenizer.pad_token_id)
-
-    def decode_pred(pred: EvalPrediction) -> Tuple[List[str], List[str]]:
-        pred_str = tokenizer.batch_decode(pred.predictions, skip_special_tokens=True)
-        label_str = tokenizer.batch_decode(pred.label_ids, skip_special_tokens=True)
-        pred_str = lmap(str.strip, pred_str)
-        label_str = lmap(str.strip, label_str)
-        return pred_str, label_str
-
-    def summarization_metrics(pred: EvalPrediction) -> Dict:
-        pred_str, label_str = decode_pred(pred)
-        rouge: Dict = calculate_rouge(pred_str, label_str)
-        summ_len = np.round(np.mean(lmap(non_pad_len, pred.predictions)), 1)
-        rouge.update({"gen_len": summ_len})
-        return rouge
-
-    def translation_metrics(pred: EvalPrediction) -> Dict:
-        pred_str, label_str = decode_pred(pred)
-        bleu: Dict = calculate_bleu(pred_str, label_str)
-        gen_len = np.round(np.mean(lmap(non_pad_len, pred.predictions)), 1)
-        bleu.update({"gen_len": gen_len})
-        return bleu
-
-    compute_metrics_fn = summarization_metrics if "summarization" in task_name else translation_metrics
-    return compute_metrics_fn
 
 
 def trim_batch(
@@ -439,13 +431,6 @@ def pickle_save(obj, path):
 def flatten_list(summary_ids: List[List]):
     return [x for x in itertools.chain.from_iterable(summary_ids)]
 
-
-def save_git_info(folder_path: str) -> None:
-    """Save git information to output_dir/git_log.json"""
-    repo_infos = get_git_info()
-    save_json(repo_infos, os.path.join(folder_path, "git_log.json"))
-
-
 def save_json(content, path, indent=4, **json_dump_kwargs):
     with open(path, "w") as f:
         json.dump(content, f, indent=indent, **json_dump_kwargs)
@@ -455,20 +440,7 @@ def load_json(path):
     with open(path) as f:
         return json.load(f)
 
-
-def get_git_info():
-    repo = git.Repo(search_parent_directories=True)
-    repo_infos = {
-        "repo_id": str(repo),
-        "repo_sha": str(repo.head.object.hexsha),
-        "repo_branch": str(repo.active_branch),
-        "hostname": str(socket.gethostname()),
-    }
-    return repo_infos
-
-
 ROUGE_KEYS = ["rouge1", "rouge2", "rougeL", "rougeLsum"]
-
 
 def extract_rouge_mid_statistics(dct):
     new_dict = {}
