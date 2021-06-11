@@ -1,6 +1,7 @@
 # Custom
 out
 dummy.sh
+data/dummy
 trained_models/*
 !trained_models/.gitkeep
 
