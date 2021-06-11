@@ -1,6 +1,6 @@
 # Paragraph-level Simplification of Medical Texts
 
-Code and data for our NAACL 2021 paper "Paragraph-level Simplification of Medical Texts," which can be found [here](http://arxiv.org/abs/2104.05767 "here"). If you find our data and/or code useful in your work, please include the following citation:
+Code and data for our NAACL 2021 paper "Paragraph-level Simplification of Medical Texts," which can be found [here](http://arxiv.org/abs/2104.05767 "here"). If you have any questions about the code or the paper, feel free to email me at `ashwin.devaraj@utexas.edu`. If you find our data and/or code useful in your work, please include the following citation:
 ```
 @inproceedings{devaraj-etal-2021-paragraph,
     title = "Paragraph-level Simplification of Medical Texts",
@@ -12,6 +12,15 @@ Code and data for our NAACL 2021 paper "Paragraph-level Simplification of Medica
     url = "https://www.aclweb.org/anthology/2021.naacl-main.395",
     pages = "4972--4984",
 }
+```
+
+### Dependencies
+```
+pytorch
+pytorch-lightning==0.9.0
+transformers==3.3.4
+rouge_score
+nltk
 ```
 
 ### Data
@@ -33,7 +42,7 @@ To use this dataset for training or text generation, copy the directory into the
 There are 4 different training settings explored in the paper: no unlikelihood training and unlikelihood training with 3 different sets of weights used in the loss function (Cochrane, Newsela, and both). To train a model under one of these settings, run one of the following scripts: `scripts/train/bart-no-ul.sh` or `scripts/bart-ul_{cochrane, newsela, both}.sh`.
 
 ### Pretrained Models
-Coming soon!
+The pretrained models corresponding to the 4 training settings can be found [here](https://drive.google.com/drive/folders/1cIiJeUswacHrP0AnsFwprXk6C7qT-m-A?usp=sharing). To use these models, unzip the directories and place them in the `trained_models` directory. 
 
 ### Generate Text
-To generate text using trained models, run one of the following scripts: `scripts/gen/bart_gen_{no-ul, cochrane, newsela, both}.sh`. Decoding hyperparameters can be controlled by modifying the command-line arguments listed in the scripts.
+To generate text using trained models, run one of the following scripts: `scripts/gen/bart_gen_{no-ul, cochrane, newsela, both}.sh`. Decoding hyperparameters can be controlled by modifying the command-line arguments listed in the scripts. Both a text and JSON version of the generated text will be written to the directory containing the model (i.e. `trained_models/bart-ul_cochrane`).
