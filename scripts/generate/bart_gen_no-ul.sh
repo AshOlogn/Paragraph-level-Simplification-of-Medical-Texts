@@ -19,7 +19,7 @@ python -u modeling/finetune.py \
 --generate_input_prefix=test \
 --generate_epoch=1 \
 --generate_start_index=0 \
---generate_end_index=5 \
+--generate_end_index=125 \
 --decode_method=nucleus \
 --decode_p=0.9 \
 --do_generate
