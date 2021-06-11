@@ -27,6 +27,7 @@ from utils import (
     LegacySeq2SeqDataset,
     Seq2SeqDataset,
     assert_all_frozen,
+    calculate_rouge,
     flatten_list,
     freeze_embeds,
     freeze_params,
@@ -214,12 +215,6 @@ class SummarizationModule(BaseTransformer):
         if self.unlikelihood_training:
             ul_loss = self.unlikelihood_loss(decoder_input_ids, lm_logits, self.weight_vector, self.unlikelihood_selective_penalty)
             ul_loss_weighted = ul_loss * self.unlikelihood_alpha
-
-            print("*******************")
-            print(f"loss: {loss}")
-            print(f"UL loss: {ul_loss_weighted}")
-            print("*******************")
-
             loss_log['ul_logr'] = ul_loss_weighted.item()/batch_size
             loss += ul_loss_weighted
 
@@ -269,6 +264,9 @@ class SummarizationModule(BaseTransformer):
             f"{prefix}_{self.val_metric}": metric_tensor,
         }
 
+    def calc_generative_metrics(self, preds, target) -> Dict:
+        return calculate_rouge(preds, target)
+
     def _generative_step(self, batch: dict) -> dict:
         t0 = time.time()
 
@@ -286,8 +284,9 @@ class SummarizationModule(BaseTransformer):
         target: List[str] = self.ids_to_clean_text(batch["labels"])
         loss_tensors = self._step(batch)
         base_metrics = {name: loss for name, loss in zip(self.loss_names, loss_tensors)}
+        rouge: Dict = self.calc_generative_metrics(preds, target)
         summ_len = np.mean(lmap(len, generated_ids))
-        base_metrics.update(gen_time=gen_time, gen_len=summ_len, preds=preds, target=target)
+        base_metrics.update(gen_time=gen_time, gen_len=summ_len, preds=preds, target=target, **rouge)
         return base_metrics
 
     def test_step(self, batch, batch_idx):
@@ -678,7 +677,7 @@ def main(args, model=None) -> SummarizationModule:
             
             print(gen_text + '\n----------------------------------------\n')
 
-        output = [{'doi': d, 'abstract': a, 'pls': p, 'gen': g} for d,a,p,g in zip(dois_final, abstracts_final, pls_final, gen_final)]
+        output = [{'doi': d.strip(), 'abstract': a.strip(), 'pls': p.strip(), 'gen': g.strip()} for d,a,p,g in zip(dois_final, abstracts_final, pls_final, gen_final)]
 
         fname_json = fname_prefix + '.json'
         open(join(args.output_dir, fname_json), 'w').write(json.dumps(output, indent=2))

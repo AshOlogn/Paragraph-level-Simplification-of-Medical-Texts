@@ -12,6 +12,7 @@ from typing import Callable, Dict, Iterable, List, Tuple, Union
 import numpy as np
 import torch
 import torch.distributed as dist
+from rouge_score import rouge_scorer, scoring
 from torch import nn
 from torch.utils.data import Dataset, Sampler
 
@@ -78,11 +79,9 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=-100):
     loss = (1.0 - epsilon) * nll_loss + eps_i * smooth_loss
     return loss, nll_loss
 
-
 def lmap(f: Callable, x: Iterable) -> List:
     """list(map(f, x))"""
     return list(map(f, x))
-
 
 def trim_batch(
     input_ids,

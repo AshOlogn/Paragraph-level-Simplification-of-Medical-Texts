@@ -5,9 +5,6 @@ export CURRENT_DIR=${PWD}
 export DATA_DIR=${CURRENT_DIR}/data/data-1024
 export MODEL_DIR=${CURRENT_DIR}/${MODEL_DIR_NAME}
 
-# Add parent directory to python path to access lightning_base.py and utils.py
-export PYTHONPATH="../":"${PYTHONPATH}"
-export PYTHONPATH="../../src/":"${PYTHONPATH}"
 python -u modeling/finetune.py \
 --model_name_or_path=facebook/bart-large-xsum \
 --data_dir=$DATA_DIR \
