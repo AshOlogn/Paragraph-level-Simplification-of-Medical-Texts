@@ -18,7 +18,7 @@ Code and data for our NAACL 2021 paper "Paragraph-level Simplification of Medica
 ```
 pytorch
 pytorch-lightning==0.9.0
-transformers==3.3.4
+transformers==3.3.1
 rouge_score
 nltk
 ```
